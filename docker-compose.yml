@@ -1,0 +1,32 @@
+version: '3.9'
+
+services:
+  backup-portainer-github:
+    container_name: ${TARGET_CONTAINER_NAME} 
+    image: ghcr.io/lepikouze/backup-portainer-github:latest
+    environment:
+      PUID: 1000
+      PGID: 1000
+      PORTAINER_URL: ${PORTAINER_URL}
+      PORTAINER_USERNAME: ${PORTAINER_USERNAME}
+      PORTAINER_PASSWORD: ${PORTAINER_PASSWORD}
+      TARGET_CONTAINER_NAME: ${TARGET_CONTAINER_NAME}
+      STACKS_BASE_PATH: /stacks
+      GITHUB_USERNAME: ${GITHUB_USERNAME}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_REPO_NAME: ${GITHUB_REPO_NAME}
+      # README_TITLE: ${README_TITLE}  # Optional
+      # README_DESCRIPTION: ${README_DESCRIPTION}  # Optional
+      # GITHUB_REPO_PATH: ${GITHUB_REPO_PATH}  # Optional
+      #CRON_SCHEDULE: 0 0 4 * * 1 # Optional, use this OR INTERVAL_SECONDS, not both
+      INTERVAL_SECONDS: 60 # Optional, use this OR CRON_SCHEDULE, not both
+    ports:
+      - "5000:5000"
+    volumes:
+      - /folder/data:${GITHUB_REPO_PATH} # Optional
+      - /var/run/docker.sock:/var/run/docker.sock:ro 
+      # Specify the path to the directory where Portainer stores its Docker Compose files 
+      # your_path_to_portainer/compose
+      - /portainer_compose_directory:/stacks:ro # Optional
+
+    restart: unless-stopped
