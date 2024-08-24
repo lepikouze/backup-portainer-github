@@ -1,5 +1,6 @@
 # backup portainer github
 
+[![Docker Pulls](https://img.shields.io/docker/pulls/lepikouze/backup-portainer-github)](https://hub.docker.com/r/lepikouze/backup-portainer-github)
 [![GitHub last commit](https://img.shields.io/github/last-commit/lepikouze/backup-portainer-github)](https://github.com/lepikouze/backup-portainer-github/commits/main)
 [![GitHub License](https://img.shields.io/github/license/lepikouze/backup-portainer-github)](https://github.com/lepikouze/backup-portainer-github/blob/main/LICENSE)
 
