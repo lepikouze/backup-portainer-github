@@ -1,0 +1,5 @@
+Flask==2.0.3
+Werkzeug==2.0.3
+requests==2.26.0
+GitPython==3.1.24
+APScheduler==3.7.0
