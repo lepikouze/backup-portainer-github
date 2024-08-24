@@ -59,7 +59,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - /folder/data:${GITHUB_REPO_PATH}
+      - /folder/data:${GITHUB_REPO_PATH} # Optional
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /portainer_compose_directory:/stacks:ro
 
@@ -102,7 +102,7 @@ docker run -d \
   --env GITHUB_REPO_PATH=$GITHUB_REPO_PATH \  # Optional
   --env INTERVAL_SECONDS=$INTERVAL_SECONDS \  # Optional, use this OR CRON_SCHEDULE, not both
   -p 5000:5000 \
-  -v /folder/data:$GITHUB_REPO_PATH \
+  -v /folder/data:$GITHUB_REPO_PATH \ # Optional
   -v /var/run/docker.sock:/var/run/docker.sock:ro \
   -v /portainer_compose_directory:/stacks:ro \
   ghcr.io/lepikouze/backup-portainer-github:latest \
