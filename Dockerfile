@@ -32,8 +32,11 @@ RUN apt-get update && apt-get install -y git
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Create Woring directory
+RUN mkdir -p /app
+
 # Copy the application code
-COPY . /app
+COPY app.py /app
 
 # Set working directory
 WORKDIR /app
