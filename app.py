@@ -74,13 +74,18 @@ def get_stacks(token):
 def get_containers(token, endpoint_id):
     """
     Retrieves a list of containers for a specific endpoint from Portainer.
+    Handles errors gracefully if the endpoint is unreachable.
     """
     logger.info(f"Fetching containers for endpoint ID {endpoint_id}.")
     url = f"{PORTAINER_URL}/api/endpoints/{endpoint_id}/docker/containers/json?all=true"
     headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = requests.get(url, headers=headers, timeout=10)  # Timeout to avoid hanging
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error fetching containers for endpoint ID {endpoint_id}: {e}")
+        return []  # Return an empty list if the endpoint is unreachable
 
 def check_or_clone_repo():
     """
@@ -178,6 +183,10 @@ def update_readme(repo, endpoints, stacks):
             f.write("| --------------- | --------------- | --------------- | --------------- |\n")
 
             containers = get_containers(get_portainer_token(), endpoint['Id'])
+            if not containers:
+                logger.warning(f"No containers found or endpoint unreachable for {endpoint['Name']} (ID: {endpoint['Id']}).")
+                continue
+
             for container in containers:
                 status_icon = "🟢" if container['State'] == "running" else "🔴"
                 container_name = container['Names'][0].lstrip('/')  # Remove leading "/"
