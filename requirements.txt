@@ -1,5 +1,5 @@
 Flask==2.2.5
-Werkzeug==2.3.8
-requests==2.31.0
-GitPython==3.1.33
+Werkzeug==3.0.6
+requests==2.32.0
+GitPython==3.1.41
 APScheduler==3.7.0
