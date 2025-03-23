@@ -14,19 +14,25 @@
 # Automated backup of Docker stacks and environment files from Portainer to a GitHub repository.
 #
 # Base image with Python 3.9
-FROM python:3.9-slim
+FROM python:3.9-slim-bookworm
 
 # PROVIDE IMAGE LABLES
-LABEL "com.example.vendor"="ACME Incorporated"
-LABEL version="1.0"
+LABEL maintainer="Lepikouze"
 LABEL org.opencontainers.image.title="backup-portainer-github"
 LABEL org.opencontainers.image.source="https://github.com/lepikouze/backup-portainer-github"
 LABEL description="Automated backup of Docker stacks and environment files from Portainer to a GitHub repository."
-LABEL maintainer="Lepikouze"
 LABEL org.opencontainers.image.licenses="MIT"
 
-# Install required packages
-RUN apt-get update && apt-get upgrade -y && apt-get install -y git && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install only essential system packages
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+    git ca-certificates curl && \
+    apt-get purge -y perl libldap-2.5-0 && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt .
