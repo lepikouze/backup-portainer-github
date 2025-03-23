@@ -18,15 +18,18 @@ before_script:
 build:
   stage: build
   image: docker:latest
-  services:
-    - docker:dind
   script:
-    - docker build -t $IMAGE_NAME:$TAG .
+    - docker build -t $IMAGE_NAME:$TEMP_TAG .
+    - docker push $IMAGE_NAME:$TEMP_TAG
 
 push:
   stage: push
   image: docker:latest
-  services:
-    - docker:dind
   script:
+    - docker pull $IMAGE_NAME:$TEMP_TAG
+    - docker tag $IMAGE_NAME:$TEMP_TAG $IMAGE_NAME:$TAG
+    - docker tag $IMAGE_NAME:$TEMP_TAG $IMAGE_NAME:latest
     - docker push $IMAGE_NAME:$TAG
+    - docker push $IMAGE_NAME:latest
+    # (optionnel) - supprimer l'image temporaire sur le registre :
+    - docker image rm $IMAGE_NAME:$TEMP_TAG
