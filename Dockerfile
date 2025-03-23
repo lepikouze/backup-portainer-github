@@ -14,7 +14,7 @@
 # Automated backup of Docker stacks and environment files from Portainer to a GitHub repository.
 #
 # Base image with Python 3.9
-FROM python:3.9-slim-bookworm
+FROM python:3.9-alpine
 
 # PROVIDE IMAGE LABLES
 LABEL maintainer="Lepikouze"
@@ -25,14 +25,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 
 
 # Install only essential system packages
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-    git ca-certificates curl && \
-    apt-get purge -y perl libldap-2.5-0 && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache git gcc musl-dev libffi-dev
 
 # Install Python dependencies
 COPY requirements.txt .
