@@ -26,7 +26,7 @@ LABEL maintainer="Lepikouze"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Install required packages
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get upgrade -y && apt-get install -y git && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt .
