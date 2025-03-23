@@ -1,0 +1,26 @@
+stages:
+  - build
+  - push
+
+variables:
+  TAG: "${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}"
+  IMAGE_NAME: "$HARBOR_URL/backup-portainer-github/backup-portainer-github"
+
+before_script:
+  - echo "$HARBOR_PASSWORD" | docker login -u "$HARBOR_USERNAME" --password-stdin $HARBOR_URL
+
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t $IMAGE_NAME:$TAG .
+
+push:
+  stage: push
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker push $IMAGE_NAME:$TAG
