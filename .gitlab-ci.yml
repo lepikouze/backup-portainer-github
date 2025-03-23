@@ -6,6 +6,10 @@ variables:
   TAG: "${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}"
   IMAGE_NAME: "$HARBOR_URL/backup-portainer-github/backup-portainer-github"
 
+services:
+  - name: docker:dind
+    alias: docker
+    
 before_script:
   - echo "$HARBOR_PASSWORD" | docker login -u "$HARBOR_USERNAME" --password-stdin $HARBOR_URL
 
