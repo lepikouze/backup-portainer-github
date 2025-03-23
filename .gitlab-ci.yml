@@ -5,6 +5,7 @@ stages:
 variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
+  TEMP_TAG: build-temp
   TAG: "${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}"
   IMAGE_NAME: "$HARBOR_URL/backup-portainer-github/backup-portainer-github"
 
