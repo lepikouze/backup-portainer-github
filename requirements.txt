@@ -3,3 +3,5 @@ Werkzeug==3.0.6
 requests==2.32.0
 GitPython==3.1.41
 APScheduler==3.7.0
+setuptools==70.0.0
+pip==23.3
