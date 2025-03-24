@@ -36,36 +36,41 @@ sync_to_github:
   before_script:
     - apk add --no-cache git
   script:
+    # Config Git
     - git config --global user.email "ci@martinbranda.com"
     - git config --global user.name "GitLab CI"
     - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github-test.git
 
-    # Historique complet requis pour les tags
+    # Récupération historique complet + tags
     - git fetch --unshallow || true
     - git fetch --tags
 
-    # Afficher les derniers tags
+    # Affichage tags pour log
     - echo "📦 Tags disponibles :"
     - git tag --sort=-creatordate | head -n 5
 
-    # Détecter le dernier tag
+    # Détection du dernier tag
     - LAST_TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | head -n 1)
     - echo "✅ Dernier tag détecté est le $LAST_TAG"
 
-    # Vérifie et push
+    # Vérification & push
     - |
       if git rev-parse "$LAST_TAG" >/dev/null 2>&1; then
-        echo "🚀 Pushing tag $LAST_TAG vers GitHub..."
-        git push github "$LAST_TAG"
+        echo "🔍 Vérification si $LAST_TAG existe déjà sur GitHub..."
+        if git ls-remote --tags github | grep -q "refs/tags/$LAST_TAG$"; then
+          echo "⏭️ Tag $LAST_TAG existe déjà sur GitHub. Aucun push effectué."
+        else
+          echo "🚀 Pushing tag $LAST_TAG vers GitHub..."
+          git push github "$LAST_TAG"
+        fi
 
         echo "🚀 Pushing branche master vers GitHub..."
         git push github HEAD:refs/heads/master
 
-        echo "🎉 Synchronisation terminée avec succès."
+        echo "✅ Synchronisation terminée avec succès."
       else
         echo "❌ Tag $LAST_TAG introuvable."
         exit 1
       fi
   when: manual
   allow_failure: false
-
