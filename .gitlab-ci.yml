@@ -30,7 +30,7 @@ build_and_push:
 
 sync_last_tag_to_github:
   stage: sync
-  image: alpine/git
+  image: alpine:latest
   script:
     - git config --global user.email "ci@martinbranda.com"
     - git config --global user.name "GitLab CI"
