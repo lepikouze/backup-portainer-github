@@ -33,7 +33,7 @@ build_and_push:
 # - Push images Docker vers GHCR + Docker Hub
 # - Créer une release GitHub avec changelog
 # ---------------------------
-push_latest_tag_and_master_to_github:
+generate_changelog:
   stage: sync
   image: docker:latest
   services:
@@ -41,71 +41,26 @@ push_latest_tag_and_master_to_github:
       alias: docker
   before_script:
     - apk add --no-cache git curl jq
+    - curl -sSL https://git.io/install-git-chglog | bash
+    - mv ./bin/git-chglog /usr/local/bin/
   script:
     - git fetch --unshallow || true
     - git fetch --tags
 
-    # 🏷️ Récupération du dernier tag local
-    - LAST_TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | head -n 1)
-    - echo "🟢 Dernier tag local est le $LAST_TAG"
+    # Détecte le dernier tag local (le nouveau)
+    - LAST_TAG=$(git tag --sort=-creatordate | tail -n 1)
+    - echo "📦 Dernier tag local est le $LAST_TAG"
 
-    # 📖 Lecture du bloc correspondant dans CHANGELOG.md
+    # Génère un changelog temporaire pour cette version
+    - git-chglog "$LAST_TAG" > CHANGELOG.md
+
+    # Affiche pour debug
+    - echo "📝 Changelog généré :"
+    - cat CHANGELOG.md
+
+    # (Optionnel) Création de la release GitHub
     - |
-      echo "📝 Extraction du changelog pour $LAST_TAG"
-
-      if [ ! -f CHANGELOG.md ]; then
-        echo "❌ Fichier CHANGELOG.md introuvable"
-        exit 1
-      fi
-
-      RELEASE_BODY=$(awk "/^## $LAST_TAG/{flag=1;next}/^## /{flag=0}flag" CHANGELOG.md)
-
-      if [ -z "$RELEASE_BODY" ]; then
-        RELEASE_BODY="📦 Pas de changelog trouvé pour $LAST_TAG"
-        echo "$RELEASE_BODY" > changelog.md
-      else
-        echo "$RELEASE_BODY" > changelog.md
-      fi
-
-      echo "$RELEASE_BODY" > changelog.md
-      echo "✅ Contenu extrait :"
-      cat changelog.md
-
-
-    # 🔁 Git remote + push
-    - git config --global user.email "ci@martinbranda.com"
-    - git config --global user.name "GitLab CI"
-    - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/$GITHUB_USERNAME/backup-portainer-github-test.git
-
-    - echo "🚀 Pushing tag $LAST_TAG vers GitHub..."
-    - git push github "$LAST_TAG" || echo "⚠️ Le tag existe déjà sur GitHub."
-
-    - echo "🚀 Pushing master vers GitHub..."
-    - git push github HEAD:refs/heads/master
-
-    # 🐳 Connexion aux registries
-    - echo "$HARBOR_PASSWORD" | docker login -u "$HARBOR_USERNAME" --password-stdin $HARBOR_URL
-    - echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-    - echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USERNAME" --password-stdin
-
-    # 📥 Pull de l'image depuis Harbor
-    - docker pull $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG
-
-    # 🏷️ Tag local pour GHCR et DockerHub
-    - docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG ghcr.io/$GITHUB_USERNAME/backup-portainer-github-test:$LAST_TAG
-    - docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG ghcr.io/$GITHUB_USERNAME/backup-portainer-github-test:latest
-    #- docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG $DOCKERHUB_USERNAME/backup-portainer-github:$LAST_TAG
-    #- docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG $DOCKERHUB_USERNAME/backup-portainer-github:latest
-
-    # 🚀 Push vers GHCR & DockerHub
-    - docker push ghcr.io/$GITHUB_USERNAME/backup-portainer-github-test:$LAST_TAG
-    - docker push ghcr.io/$GITHUB_USERNAME/backup-portainer-github-test:latest
-   # - docker push $DOCKERHUB_USERNAME/backup-portainer-github:$LAST_TAG
-   # - docker push $DOCKERHUB_USERNAME/backup-portainer-github:latest
-
-    # 📝 Création de la release GitHub
-    - |
-      CHANGELOG=$(cat changelog.md)
+      CHANGELOG=$(cat CHANGELOG.md)
 
       curl -s -X POST https://api.github.com/repos/$GITHUB_USERNAME/backup-portainer-github-test/releases \
         -H "Authorization: token $GITHUB_TOKEN" \
@@ -115,6 +70,4 @@ push_latest_tag_and_master_to_github:
               --arg name "$LAST_TAG" \
               --arg body "$CHANGELOG" \
               '{ tag_name: $tag, name: $name, body: $body, draft: false, prerelease: false }')"
-
   when: manual
-  allow_failure: false
