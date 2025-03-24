@@ -4,8 +4,8 @@
 {{- if .Tag.Previous }}
 ## 📦 {{ .Tag.Name }} – {{ datetime "2006-01-02" .Tag.Date }}
 
-{{- if .Tag.CompareURL }}
-[Voir les changements]({{ .Tag.CompareURL }})
+{{- with .Tag.CompareURL }}
+[Voir les changements]({{ . }})
 {{- end }}
 
 {{- else }}
