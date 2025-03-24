@@ -84,7 +84,7 @@ push_latest_tag_and_master_to_github:
         CHANGELOG="${CHANGELOG}\n- ✨ Autres changements – ${COUNT} commit(s)"
       fi
 
-      echo -e "$CHANGELOG" > changelog.md
+      printf "%b\n" "$CHANGELOG" > changelog.md
 
     # 🔁 Git remote + push
     - git config --global user.email "ci@martinbranda.com"
