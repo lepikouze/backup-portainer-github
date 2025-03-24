@@ -1,16 +1,7 @@
 {{- /* Title block */ -}}
 {{ if .Versions }}
 {{- range .Versions }}
-{{- if .Tag.Previous }}
 ## 📦 {{ .Tag.Name }} – {{ datetime "2006-01-02" .Tag.Date }}
-
-{{- if .Tag.CompareURL }}
-[Voir les changements]({{ .Tag.CompareURL }})
-{{- end }}
-
-{{- else }}
-## 📦 {{ .Tag.Name }} – {{ datetime "2006-01-02" .Tag.Date }}
-{{- end }}
 
 {{- if .CommitGroups -}}
 {{- range .CommitGroups }}
