@@ -51,18 +51,15 @@ push_latest_tag_and_master_to_github:
     - LAST_TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | head -n 1)
     - echo "🟢 Dernier tag local est le $LAST_TAG"
 
-    # 🔍 Récupération du dernier tag GitHub
     - |
+      echo "📝 Génération du changelog intelligent..."
+
       LAST_GITHUB_TAG=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
         "https://api.github.com/repos/$GITHUB_USERNAME/backup-portainer-github-test/releases" \
         | jq -r 'map(.tag_name) | sort_by(.) | reverse | .[0]')
       echo "🔍 Dernier tag GitHub est $LAST_GITHUB_TAG"
 
-    # 📘 Génération du changelog propre et groupé
-    - |
-      echo "📝 Génération du changelog intelligent..."
       COMMITS=$(git log "$LAST_GITHUB_TAG..$LAST_TAG" --pretty=format:"%s" --no-merges)
-
       CHANGELOG="## 🧾 Release Notes"
 
       if echo "$COMMITS" | grep -qiE "gitlab-ci|ci\.yml"; then
@@ -87,7 +84,7 @@ push_latest_tag_and_master_to_github:
         CHANGELOG="${CHANGELOG}\n- ✨ Autres changements – ${COUNT} commit(s)"
       fi
 
-      echo -e "$CHANGELOG"
+      echo -e "$CHANGELOG" > changelog.md
 
     # 🔁 Git remote + push
     - git config --global user.email "ci@martinbranda.com"
