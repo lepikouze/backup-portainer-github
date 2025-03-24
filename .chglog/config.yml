@@ -1,3 +1,6 @@
+repository:
+  url: "https://gitlab.home.martinbranda.com/louis/backup-portainer-github"
+
 title:
   pattern: 'v{{ .Version }}'
   content: '📦 Release {{ .Version }} – {{ .Time.Format "2006-01-02" }}'
