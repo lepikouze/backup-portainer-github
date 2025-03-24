@@ -54,7 +54,7 @@ push_latest_tag_and_master_to_github:
     # 🔍 Récupération du dernier tag GitHub
     - |
       LAST_GITHUB_TAG=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-        https://api.github.com/repos/$GITHUB_USERNAME/backup-portainer-github-test/releases \
+        "https://api.github.com/repos/$GITHUB_USERNAME/backup-portainer-github-test/releases" \
         | jq -r 'map(.tag_name) | sort_by(.) | reverse | .[0]')
       echo "🔍 Dernier tag GitHub est $LAST_GITHUB_TAG"
 
