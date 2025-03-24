@@ -2,22 +2,20 @@ stages:
   - build
   - sync
 
-variables:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_TLS_CERTDIR: ""
-  TAG: "$CI_COMMIT_TAG"
-  IMAGE_NAME: "$HARBOR_URL/backup-portainer-github/backup-portainer-github"
-
-services:
-  - name: docker:dind
-    alias: docker
-
-before_script:
-  - echo "$HARBOR_PASSWORD" | docker login -u "$HARBOR_USERNAME" --password-stdin $HARBOR_URL
-
+# ---------------------------
+# JOB : BUILD + PUSH vers Harbor
+# ---------------------------
 build_and_push:
   stage: build
   image: docker:latest
+  services:
+    - name: docker:dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    TAG: "$CI_COMMIT_TAG"
+    IMAGE_NAME: "$HARBOR_URL/backup-portainer-github/backup-portainer-github"
   script:
     - echo "$HARBOR_PASSWORD" | docker login -u "$HARBOR_USERNAME" --password-stdin $HARBOR_URL
     - docker build -t $IMAGE_NAME:$TAG .
@@ -28,32 +26,32 @@ build_and_push:
     - if: '$CI_COMMIT_TAG'
       when: always
 
+# ---------------------------
+# JOB : PUSH DERNIER TAG + BRANCHE master vers GitHub (manuel)
+# ---------------------------
 push_latest_tag_and_master_to_github:
   stage: sync
   image: alpine:latest
   before_script:
     - apk add --no-cache git
   script:
-    # Config Git
     - git config --global user.email "ci@martinbranda.com"
     - git config --global user.name "GitLab CI"
-
-    # Ajouter le remote GitHub avec token
     - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github-test.git
 
-    # 🔧 Assure-toi d’avoir l’historique complet pour le push
+    # Historique complet requis pour les tags
     - git fetch --unshallow || true
     - git fetch --tags
 
-    # Lister les 5 derniers tags dans les logs
+    # Afficher les derniers tags
     - echo "📦 Tags disponibles :"
     - git tag --sort=-creatordate | head -n 5
 
-    # Détection du dernier tag
+    # Détecter le dernier tag
     - LAST_TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | head -n 1)
-    - echo "✅ Dernier tag détecté est le $LAST_TAG"
+    - echo "✅ Dernier tag détecté : $LAST_TAG"
 
-    # Vérifie l’existence du tag
+    # Vérifie et push
     - |
       if git rev-parse "$LAST_TAG" >/dev/null 2>&1; then
         echo "🚀 Pushing tag $LAST_TAG vers GitHub..."
@@ -62,11 +60,10 @@ push_latest_tag_and_master_to_github:
         echo "🚀 Pushing branche master vers GitHub..."
         git push github HEAD:refs/heads/master
 
-        echo "🎉 Synchronisation terminée"
+        echo "🎉 Synchronisation terminée avec succès."
       else
-        echo "❌ Tag $LAST_TAG introuvable !"
+        echo "❌ Tag $LAST_TAG introuvable."
         exit 1
       fi
   when: manual
   allow_failure: false
-
