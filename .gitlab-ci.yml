@@ -1,5 +1,5 @@
 stages:
-  - update
+  - sync
 
 variables:
   DOCKER_HOST: tcp://docker:2375
@@ -7,37 +7,45 @@ variables:
   TAG: "$CI_COMMIT_TAG"
   IMAGE_NAME: "$HARBOR_URL/backup-portainer-github/backup-portainer-github"
 
-update_changelog:
-  stage: update
+create_github_release:
+  stage: sync
   image: alpine:latest
-  services:
-    - name: docker:dind
-      alias: docker
   before_script:
-    - apk add --no-cache git curl jq bash tar
-    - |
-      echo "⬇️ Installation git-chglog (v0.15.1)"
-      GIT_CHGLOG_VERSION="0.15.1"
-      curl -sSL "https://github.com/git-chglog/git-chglog/releases/download/v${GIT_CHGLOG_VERSION}/git-chglog_${GIT_CHGLOG_VERSION}_linux_amd64.tar.gz" -o git-chglog.tar.gz
-      tar -xzf git-chglog.tar.gz
-      chmod +x git-chglog
-      mv git-chglog /usr/local/bin/git-chglog
+    - apk add --no-cache curl jq git
   script:
-    - git config --global user.email "ci@martinbranda.com"
-    - git config --global user.name "GitLab CI"
-    - echo "📦 Tag actuel est le $CI_COMMIT_TAG"
-    - PREVIOUS_TAG=$(git tag --sort=creatordate | grep -v "$CI_COMMIT_TAG" | tail -n 1)
-    - echo "🕓 Tag précédent est le $PREVIOUS_TAG"
-    - echo "📝 Génération du changelog entre $PREVIOUS_TAG -> $CI_COMMIT_TAG"
-    - git-chglog "$PREVIOUS_TAG..$CI_COMMIT_TAG" > temp_changelog.md
-    - if [ -f CHANGELOG.md ]; then cp CHANGELOG.md OLD_CHANGELOG.md; else touch OLD_CHANGELOG.md; fi
-    - cat temp_changelog.md OLD_CHANGELOG.md > CHANGELOG.md
-    - git remote set-url origin https://$GITLAB_DEPLOY_USER:$GITLAB_DEPLOY_TOKEN@gitlab.home.martinbranda.com/louis/backup-portainer-github.git
-    - git checkout $CI_COMMIT_REF_NAME
-    - git add CHANGELOG.md
-    - git commit -m "📝 MAJ changelog automatique pour $CI_COMMIT_TAG" || echo "Pas de modifications"
-    - git push origin $CI_COMMIT_REF_NAME
+    - git fetch --unshallow || true
+    - git fetch --tags
+
+    - LAST_TAG="$CI_COMMIT_TAG"
+    - echo "📝 Lecture du changelog pour $LAST_TAG"
+
+    - |
+      if [ ! -f CHANGELOG.md ]; then
+        echo "❌ Fichier CHANGELOG.md introuvable"
+        exit 1
+      fi
+
+      # Extraire le bloc de changelog entre deux balises ## vX.X.X
+      CHANGELOG_BODY=$(awk "/^## $LAST_TAG/{flag=1;next}/^## /{flag=0}flag" CHANGELOG.md)
+
+      if [ -z "$CHANGELOG_BODY" ]; then
+        echo "❌ Aucun changelog trouvé pour $LAST_TAG"
+        exit 1
+      fi
+
+      echo "✅ Contenu extrait :"
+      echo "$CHANGELOG_BODY"
+
+    - |
+      curl -s -X POST https://api.github.com/repos/$GITHUB_USERNAME/backup-portainer-github-test/releases \
+        -H "Authorization: token $GITHUB_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "$(jq -n \
+              --arg tag "$LAST_TAG" \
+              --arg name "$LAST_TAG" \
+              --arg body "$CHANGELOG_BODY" \
+              '{ tag_name: $tag, name: $name, body: $body, draft: false, prerelease: false }')"
   rules:
     - if: '$CI_COMMIT_TAG'
-      when: always
+      when: manual
 
