@@ -1,6 +1,6 @@
 stages:
   - build
-  - sync
+  - update
 
 variables:
   DOCKER_HOST: tcp://docker:2375
@@ -27,49 +27,43 @@ build_and_push:
     - if: '$CI_COMMIT_TAG'
       when: always
 
-# ---------------------------
-# JOB 2 : SYNC complet vers GitHub (manuel)
-# - Push code (tag + master)
-# - Push images Docker vers GHCR + Docker Hub
-# - Créer une release GitHub avec changelog
-# ---------------------------
-generate_changelog:
-  stage: sync
+update_changelog:
+  stage: update
   image: docker:latest
   services:
     - name: docker:dind
       alias: docker
   before_script:
     - apk add --no-cache git curl jq bash
-    - GIT_CHGLOG_VERSION=0.15.1
-    - curl -sSL "https://github.com/git-chglog/git-chglog/releases/download/v${GIT_CHGLOG_VERSION}/git-chglog_${GIT_CHGLOG_VERSION}_linux_amd64.tar.gz" -o git-chglog.tar.gz
-    - tar -xzf git-chglog.tar.gz
-    - mv git-chglog /usr/local/bin/
-  script:
-    - git fetch --unshallow || true
-    - git fetch --tags
-
-    # Détecte le dernier tag local (le nouveau)
-    - LAST_TAG=$(git tag --sort=-creatordate | tail -n 1)
-    - echo "📦 Dernier tag local est le $LAST_TAG"
-
-    # Génère un changelog temporaire pour cette version
-    - git-chglog "$LAST_TAG" > CHANGELOG.md
-
-    # Affiche pour debug
-    - echo "📝 Changelog généré :"
-    - cat CHANGELOG.md
-
-    # (Optionnel) Création de la release GitHub
     - |
-      CHANGELOG=$(cat CHANGELOG.md)
+      # ⬇️ Install git-chglog
+      GIT_CHGLOG_VERSION=0.15.1
+      curl -sSL "https://github.com/git-chglog/git-chglog/releases/download/v${GIT_CHGLOG_VERSION}/git-chglog_${GIT_CHGLOG_VERSION}_linux_amd64.tar.gz" -o git-chglog.tar.gz
+      tar -xzf git-chglog.tar.gz
+      mv git-chglog /usr/local/bin/
+  script:
+    - echo "📦 Tag actuel: $CI_COMMIT_TAG"
+    - PREVIOUS_TAG=$(git tag --sort=creatordate | grep -v "$CI_COMMIT_TAG" | tail -n 1)
+    - echo "🕓 Tag précédent: $PREVIOUS_TAG"
 
-      curl -s -X POST https://api.github.com/repos/$GITHUB_USERNAME/backup-portainer-github-test/releases \
-        -H "Authorization: token $GITHUB_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "$(jq -n \
-              --arg tag "$LAST_TAG" \
-              --arg name "$LAST_TAG" \
-              --arg body "$CHANGELOG" \
-              '{ tag_name: $tag, name: $name, body: $body, draft: false, prerelease: false }')"
-  when: manual
+    - |
+      if [ -z "$PREVIOUS_TAG" ]; then
+        echo "❌ Aucun tag précédent trouvé. Abandon."
+        exit 1
+      fi
+
+    - echo "📝 Génération du changelog entre $PREVIOUS_TAG -> $CI_COMMIT_TAG"
+    - git-chglog "$CI_COMMIT_TAG" --next-tag "$CI_COMMIT_TAG" > temp_changelog.md
+
+    - if [ -f CHANGELOG.md ]; then cp CHANGELOG.md OLD_CHANGELOG.md; else touch OLD_CHANGELOG.md; fi
+    - cat temp_changelog.md OLD_CHANGELOG.md > CHANGELOG.md
+
+    - git config --global user.email "ci@martinbranda.com"
+    - git config --global user.name "GitLab CI"
+    - git checkout $CI_COMMIT_REF_NAME
+    - git add CHANGELOG.md
+    - git commit -m "📝 MAJ changelog automatique pour $CI_COMMIT_TAG"
+    - git push origin $CI_COMMIT_REF_NAME
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: always
