@@ -1,5 +1,4 @@
 stages:
-  - build
   - update
 
 variables:
@@ -7,25 +6,6 @@ variables:
   DOCKER_TLS_CERTDIR: ""
   TAG: "$CI_COMMIT_TAG"
   IMAGE_NAME: "$HARBOR_URL/backup-portainer-github/backup-portainer-github"
-
-# ---------------------------
-# JOB 1 : BUILD + PUSH vers Harbor
-# ---------------------------
-build_and_push:
-  stage: build
-  image: docker:latest
-  services:
-    - name: docker:dind
-      alias: docker
-  script:
-    - echo "$HARBOR_PASSWORD" | docker login -u "$HARBOR_USERNAME" --password-stdin $HARBOR_URL
-    - docker build -t $IMAGE_NAME:$TAG .
-    - docker push $IMAGE_NAME:$TAG
-    - docker tag $IMAGE_NAME:$TAG $IMAGE_NAME:latest
-    - docker push $IMAGE_NAME:latest
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: always
 
 update_changelog:
   stage: update
@@ -53,7 +33,7 @@ update_changelog:
       fi
 
     - echo "📝 Génération du changelog entre $PREVIOUS_TAG -> $CI_COMMIT_TAG"
-    - git-chglog "$CI_COMMIT_TAG" --next-tag "$CI_COMMIT_TAG" > temp_changelog.md
+    - git-chglog "$PREVIOUS_TAG..$CI_COMMIT_TAG" > temp_changelog.md
 
     - if [ -f CHANGELOG.md ]; then cp CHANGELOG.md OLD_CHANGELOG.md; else touch OLD_CHANGELOG.md; fi
     - cat temp_changelog.md OLD_CHANGELOG.md > CHANGELOG.md
