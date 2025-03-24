@@ -28,7 +28,7 @@ build_and_push:
     - if: '$CI_COMMIT_TAG'
       when: always
 
-sync_selected_tag_to_github:
+push_latest_tag_to_github:
   stage: sync
   image: alpine:latest
   before_script:
@@ -37,10 +37,24 @@ sync_selected_tag_to_github:
     - git config --global user.email "ci@martinbranda.com"
     - git config --global user.name "GitLab CI"
     - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github-test.git
+
+    # Récupérer les tags et détecter le dernier
     - git fetch --tags
-    - echo "📦 Tags disponibles :"
-    - git tag --sort=-creatordate | head -n 10
-    - echo "🚀 Pushing tag $TAG_TO_PUSH to GitHub..."
-    - git push github $TAG_TO_PUSH
+    - echo "📦 Tags disponibles (top 5) :"
+    - git tag --sort=-creatordate | head -n 5
+
+    - LAST_TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | head -n 1)
+    - echo "🚀 Dernier tag détecté est le $LAST_TAG"
+
+    # Vérifie qu’il existe, et push
+    - |
+      if git rev-parse "$LAST_TAG" >/dev/null 2>&1; then
+        echo "✅ Pushing $LAST_TAG vers GitHub..."
+        git push github "$LAST_TAG"
+      else
+        echo "❌ Aucun tag détecté ou tag invalide."
+        exit 1
+      fi
   when: manual
   allow_failure: false
+
