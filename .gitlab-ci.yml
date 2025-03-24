@@ -59,8 +59,8 @@ push_latest_tag_and_master_to_github:
         | jq -r 'map(.tag_name) | sort_by(.) | reverse | .[0]')
       echo "🔍 Dernier tag GitHub est $LAST_GITHUB_TAG"
 
-      COMMITS=$(git log "$LAST_GITHUB_TAG..$LAST_TAG" --pretty=format:"%s" --no-merges)
-      CHANGELOG="## 🧾 Release Notes"
+#      COMMITS=$(git log "$LAST_GITHUB_TAG..$LAST_TAG" --pretty=format:"%s" --no-merges)
+#      CHANGELOG="## 🧾 Release Notes"
 
       if echo "$COMMITS" | grep -qiE "gitlab-ci|ci\.yml"; then
         COUNT=$(echo "$COMMITS" | grep -iE "gitlab-ci|ci\.yml" | wc -l)
