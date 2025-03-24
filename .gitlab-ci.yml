@@ -47,47 +47,30 @@ push_latest_tag_and_master_to_github:
     - git fetch --unshallow || true
     - git fetch --tags
 
-    # 🔍 Récupération du dernier tag
+    # 🏷️ Récupération du dernier tag local
     - LAST_TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | head -n 1)
     - echo "🟢 Dernier tag local est le $LAST_TAG"
 
+    # 📖 Lecture du bloc correspondant dans CHANGELOG.md
     - |
-      echo "📝 Génération du changelog intelligent..."
+      echo "📝 Extraction du changelog pour $LAST_TAG"
 
-      LAST_GITHUB_TAG=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-        "https://api.github.com/repos/$GITHUB_USERNAME/backup-portainer-github-test/releases" \
-        | jq -r 'map(.tag_name) | sort_by(.) | reverse | .[0]')
-      echo "🔍 Dernier tag GitHub est $LAST_GITHUB_TAG"
-
-      if [ -n "$LAST_GITHUB_TAG" ]; then
-        COMMITS=$(git log "$LAST_GITHUB_TAG..$LAST_TAG" --pretty=format:"%s" --no-merges)
-      else
-        COMMITS=$(git log "$LAST_TAG" --pretty=format:"%s" --no-merges)
+      if [ ! -f CHANGELOG.md ]; then
+        echo "❌ Fichier CHANGELOG.md introuvable"
+        exit 1
       fi
 
-      if echo "$COMMITS" | grep -qiE "gitlab-ci|ci\.yml"; then
-        COUNT=$(echo "$COMMITS" | grep -iE "gitlab-ci|ci\.yml" | wc -l)
-        CHANGELOG="${CHANGELOG}\n- 🛠 Mise à jour du fichier CI – ${COUNT} commit(s)"
-      fi
-      if echo "$COMMITS" | grep -qi "dockerfile"; then
-        COUNT=$(echo "$COMMITS" | grep -i "dockerfile" | wc -l)
-        CHANGELOG="${CHANGELOG}\n- 🐳 Dockerfile modifié – ${COUNT} commit(s)"
-      fi
-      if echo "$COMMITS" | grep -qi "readme"; then
-        COUNT=$(echo "$COMMITS" | grep -i "readme" | wc -l)
-        CHANGELOG="${CHANGELOG}\n- 📘 Mise à jour du README – ${COUNT} commit(s)"
-      fi
-      if echo "$COMMITS" | grep -qi "requirements"; then
-        COUNT=$(echo "$COMMITS" | grep -i "requirements" | wc -l)
-        CHANGELOG="${CHANGELOG}\n- 📦 Modifications des dépendances – ${COUNT} commit(s)"
-      fi
-      OTHER_COMMITS=$(echo "$COMMITS" | grep -viE "gitlab-ci|ci\.yml|dockerfile|readme|requirements")
-      if [ -n "$OTHER_COMMITS" ]; then
-        COUNT=$(echo "$OTHER_COMMITS" | wc -l)
-        CHANGELOG="${CHANGELOG}\n- ✨ Autres changements – ${COUNT} commit(s)"
+      RELEASE_BODY=$(awk "/^## $LAST_TAG/{flag=1;next}/^## /{flag=0}flag" CHANGELOG.md)
+
+      if [ -z "$RELEASE_BODY" ]; then
+        echo "❌ Aucun changelog trouvé pour $LAST_TAG"
+        exit 1
       fi
 
-      printf "%b\n" "$CHANGELOG" > changelog.md
+      echo "$RELEASE_BODY" > changelog.md
+      echo "✅ Contenu extrait :"
+      cat changelog.md
+
 
     # 🔁 Git remote + push
     - git config --global user.email "ci@martinbranda.com"
@@ -122,6 +105,8 @@ push_latest_tag_and_master_to_github:
 
     # 📝 Création de la release GitHub
     - |
+      CHANGELOG=$(cat changelog.md)
+
       curl -s -X POST https://api.github.com/repos/$GITHUB_USERNAME/backup-portainer-github-test/releases \
         -H "Authorization: token $GITHUB_TOKEN" \
         -H "Content-Type: application/json" \
