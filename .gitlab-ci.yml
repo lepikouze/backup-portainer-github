@@ -34,7 +34,7 @@ build_and_push:
 # ---------------------------
 push_latest_tag_and_master_to_github:
   stage: sync
-  image: alpine:latest
+  image: docker:latest
   services:
     - name: docker:dind
       alias: docker
