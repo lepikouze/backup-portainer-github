@@ -4,18 +4,7 @@ title:
 
 style: github
 
-template:
-  commit: |
-    {{- if .Scope }}**{{ .Scope }}:** {{ end }}{{ .Subject }}
-  header: |
-    {{ if .Tags }}
-    {{- $tag := index .Tags 0 -}}
-    ## {{ $tag.Name }} ({{ datetime "2006-01-02" $tag.Date }})
-    {{ end }}
-  footer: |
-    {{ if .LinkCompare }}
-    [Voir les changements]({{ .LinkCompare }})
-    {{ end }}
+template: CHANGELOG.tpl.md
 
 sections:
   - title: "✨ Nouvelles fonctionnalités"
