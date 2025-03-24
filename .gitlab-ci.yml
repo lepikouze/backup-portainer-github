@@ -36,7 +36,7 @@ sync_selected_tag_to_github:
   script:
     - git config --global user.email "ci@martinbranda.com"
     - git config --global user.name "GitLab CI"
-    - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/ton-utilisateur/backup-portainer-github.git
+    - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github-test.git
     - git fetch --tags
     - echo "📦 Tags disponibles :"
     - git tag --sort=-creatordate | head -n 10
