@@ -93,8 +93,8 @@ push_latest_tag_and_master_to_github:
     # 🔁 GitHub Container Registry
     - docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG ghcr.io/lepikouze/backup-portainer-github-test:$LAST_TAG
     - docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG ghcr.io/lepikouze/backup-portainer-github-test:latest
-    - docker push ghcr.io/lepikouze/backup-portainer-github:$LAST_TAG
-    - docker push ghcr.io/lepikouze/backup-portainer-github:latest
+    - docker push ghcr.io/lepikouze/backup-portainer-github-test:$LAST_TAG
+    - docker push ghcr.io/lepikouze/backup-portainer-github-test:latest
 
     # 📦 Génération changelog depuis dernière release GitHub
     - |
