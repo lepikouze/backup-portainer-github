@@ -1,5 +1,6 @@
 stages:
   - build
+  - sync
 
 variables:
   DOCKER_HOST: tcp://docker:2375
@@ -26,3 +27,15 @@ build_and_push:
   rules:
     - if: '$CI_COMMIT_TAG'
       when: always
+
+sync_to_github:
+  stage: sync
+  image: alpine/git
+  script:
+    - git config --global user.email "13553425+lepikouze@users.noreply.github.com"
+    - git config --global user.name "GitLab CI"
+    - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github-test.git
+    - git push github main
+  only:
+    - main
+  when: manual
