@@ -44,5 +44,3 @@ sync_selected_tag_to_github:
     - git push github $TAG_TO_PUSH
   when: manual
   allow_failure: false
-  variables:
-    TAG_TO_PUSH: "v1.0.0" # modifiable à la main
