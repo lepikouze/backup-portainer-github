@@ -41,7 +41,8 @@ push_latest_tag_and_master_to_github:
     # Ajouter le remote GitHub avec token
     - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github-test.git
 
-    # Récupérer tous les tags du repo
+    # 🔧 Assure-toi d’avoir l’historique complet pour le push
+    - git fetch --unshallow || true
     - git fetch --tags
 
     # Lister les 5 derniers tags dans les logs
