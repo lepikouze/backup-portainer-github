@@ -49,7 +49,7 @@ push_latest_tag_and_master_to_github:
 
     # Détecter le dernier tag
     - LAST_TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | head -n 1)
-    - echo "✅ Dernier tag détecté : $LAST_TAG"
+    - echo "✅ Dernier tag détecté est le $LAST_TAG"
 
     # Vérifie et push
     - |
