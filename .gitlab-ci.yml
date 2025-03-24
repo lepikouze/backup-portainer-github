@@ -28,14 +28,24 @@ build_and_push:
     - if: '$CI_COMMIT_TAG'
       when: always
 
-sync_to_github:
+sync_last_tag_to_github:
   stage: sync
   image: alpine/git
   script:
-    - git config --global user.email "13553425+lepikouze@users.noreply.github.com"
+    - git config --global user.email "ci@martinbranda.com"
     - git config --global user.name "GitLab CI"
+
+    # Ajouter GitHub comme remote
     - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github-test.git
-    - git push github main
-  only:
-    - master
+
+    # Récupérer tous les tags
+    - git fetch --tags
+
+    # Dernier tag (par date de création)
+    - LAST_TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | head -n 1)
+    - echo "🚀 Dernier tag trouvé : $LAST_TAG"
+
+    # Push ce tag vers GitHub
+    - git push github $LAST_TAG
   when: manual
+  allow_failure: false
