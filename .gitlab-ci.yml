@@ -37,5 +37,5 @@ sync_to_github:
     - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github-test.git
     - git push github main
   only:
-    - main
+    - master
   when: manual
