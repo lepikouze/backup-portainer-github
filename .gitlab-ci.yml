@@ -40,7 +40,7 @@ sync_to_github:
     # Config Git
     - git config --global user.email "ci@martinbranda.com"
     - git config --global user.name "GitLab CI"
-    - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github-test.git
+    - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github.git
 
     # Récupération historique complet + tags
     - git fetch --unshallow || true
