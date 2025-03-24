@@ -44,84 +44,92 @@ push_latest_tag_and_master_to_github:
   before_script:
     - apk add --no-cache git curl jq
   script:
-    # 🔖 Tag courant
     - git fetch --unshallow || true
     - git fetch --tags
+
+    # 🔍 Récupération du dernier tag
     - LAST_TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | head -n 1)
     - echo "🟢 Dernier tag local est le $LAST_TAG"
 
-    # 💬 Liste des 5 derniers tags pour info
-    - echo "📦 Tags disponibles :"
-    - git tag --sort=-creatordate | head -n 5
-
-    # 🔁 Push du tag + master sur GitHub
-    - git config --global user.email "ci@martinbranda.com"
-    - git config --global user.name "GitLab CI"
-    - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/lepikouze/backup-portainer-github-test.git
-
+    # 🔍 Récupération du dernier tag GitHub
     - |
-      if git rev-parse "$LAST_TAG" >/dev/null 2>&1; then
-        echo "🔍 Vérification si le tag $LAST_TAG existe déjà sur GitHub..."
-        if git ls-remote --tags github | grep -q "refs/tags/$LAST_TAG$"; then
-          echo "⏭️ Tag $LAST_TAG existe déjà sur GitHub. Aucun push effectué."
-        else
-          echo "🚀 Pushing tag $LAST_TAG vers GitHub..."
-          git push github "$LAST_TAG"
-        fi
+      LAST_GITHUB_TAG=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+        https://api.github.com/repos/$GITHUB_USERNAME/backup-portainer-github-test/releases \
+        | jq -r 'map(.tag_name) | sort_by(.) | reverse | .[0]')
+      echo "🔍 Dernier tag GitHub est $LAST_GITHUB_TAG"
 
-        echo "🚀 Pushing master vers GitHub..."
-        git push github HEAD:refs/heads/master
-      else
-        echo "❌ Tag $LAST_TAG introuvable localement."
-        exit 1
+    # 📘 Génération du changelog propre et groupé
+    - |
+      echo "📝 Génération du changelog intelligent..."
+      COMMITS=$(git log "$LAST_GITHUB_TAG..$LAST_TAG" --pretty=format:"%s" --no-merges)
+
+      CHANGELOG="## 🧾 Release Notes"
+
+      if echo "$COMMITS" | grep -qiE "gitlab-ci|ci\.yml"; then
+        COUNT=$(echo "$COMMITS" | grep -iE "gitlab-ci|ci\.yml" | wc -l)
+        CHANGELOG="${CHANGELOG}\n- 🛠 Mise à jour du fichier CI – ${COUNT} commit(s)"
+      fi
+      if echo "$COMMITS" | grep -qi "dockerfile"; then
+        COUNT=$(echo "$COMMITS" | grep -i "dockerfile" | wc -l)
+        CHANGELOG="${CHANGELOG}\n- 🐳 Dockerfile modifié – ${COUNT} commit(s)"
+      fi
+      if echo "$COMMITS" | grep -qi "readme"; then
+        COUNT=$(echo "$COMMITS" | grep -i "readme" | wc -l)
+        CHANGELOG="${CHANGELOG}\n- 📘 Mise à jour du README – ${COUNT} commit(s)"
+      fi
+      if echo "$COMMITS" | grep -qi "requirements"; then
+        COUNT=$(echo "$COMMITS" | grep -i "requirements" | wc -l)
+        CHANGELOG="${CHANGELOG}\n- 📦 Modifications des dépendances – ${COUNT} commit(s)"
+      fi
+      OTHER_COMMITS=$(echo "$COMMITS" | grep -viE "gitlab-ci|ci\.yml|dockerfile|readme|requirements")
+      if [ -n "$OTHER_COMMITS" ]; then
+        COUNT=$(echo "$OTHER_COMMITS" | wc -l)
+        CHANGELOG="${CHANGELOG}\n- ✨ Autres changements – ${COUNT} commit(s)"
       fi
 
-    # 🐳 Docker login vers registries
+      echo -e "$CHANGELOG"
+
+    # 🔁 Git remote + push
+    - git config --global user.email "ci@martinbranda.com"
+    - git config --global user.name "GitLab CI"
+    - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/$GITHUB_USERNAME/backup-portainer-github-test.git
+
+    - echo "🚀 Pushing tag $LAST_TAG vers GitHub..."
+    - git push github "$LAST_TAG" || echo "⚠️ Le tag existe déjà sur GitHub."
+
+    - echo "🚀 Pushing master vers GitHub..."
+    - git push github HEAD:refs/heads/master
+
+    # 🐳 Connexion aux registries
     - echo "$HARBOR_PASSWORD" | docker login -u "$HARBOR_USERNAME" --password-stdin $HARBOR_URL
     - echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USERNAME" --password-stdin
 
-    # 📥 Pull image depuis Harbor
+    # 📥 Pull de l'image depuis Harbor
     - docker pull $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG
 
-    # 🔁 Docker Hub
-    #- docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG lepikouze/backup-portainer-github:$LAST_TAG
-    #- docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG lepikouze/backup-portainer-github:latest
-    #- docker push lepikouze/backup-portainer-github:$LAST_TAG
-    #- docker push lepikouze/backup-portainer-github:latest
+    # 🏷️ Tag local pour GHCR et DockerHub
+    - docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG ghcr.io/$GITHUB_USERNAME/backup-portainer-github-test:$LAST_TAG
+    - docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG ghcr.io/$GITHUB_USERNAME/backup-portainer-github-test:latest
+    #- docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG $DOCKERHUB_USERNAME/backup-portainer-github:$LAST_TAG
+    #- docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG $DOCKERHUB_USERNAME/backup-portainer-github:latest
 
-    # 🔁 GitHub Container Registry
-    - docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG ghcr.io/lepikouze/backup-portainer-github-test:$LAST_TAG
-    - docker tag $HARBOR_URL/backup-portainer-github/backup-portainer-github:$LAST_TAG ghcr.io/lepikouze/backup-portainer-github-test:latest
-    - docker push ghcr.io/lepikouze/backup-portainer-github-test:$LAST_TAG
-    - docker push ghcr.io/lepikouze/backup-portainer-github-test:latest
+    # 🚀 Push vers GHCR & DockerHub
+    - docker push ghcr.io/$GITHUB_USERNAME/backup-portainer-github-test:$LAST_TAG
+    - docker push ghcr.io/$GITHUB_USERNAME/backup-portainer-github-test:latest
+   # - docker push $DOCKERHUB_USERNAME/backup-portainer-github:$LAST_TAG
+   # - docker push $DOCKERHUB_USERNAME/backup-portainer-github:latest
 
-    # 📦 Génération changelog depuis dernière release GitHub
+    # 📝 Création de la release GitHub
     - |
-      LAST_GITHUB_TAG=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/lepikouze/backup-portainer-github-test/releases | jq -r 'map(.tag_name) | sort_by(.) | reverse | .[0]')
-      echo "🔍 Dernier tag publié sur GitHub : $LAST_GITHUB_TAG"
-
-    - echo "🔍 Dernier tag publié sur GitHub est le $LAST_GITHUB_TAG"
-
-    - |
-      if [ -n "$LAST_GITHUB_TAG" ] && git rev-parse "$LAST_GITHUB_TAG" >/dev/null 2>&1; then
-        CHANGELOG=$(git log "$LAST_GITHUB_TAG..$LAST_TAG" --pretty=format:"- %s (%an)" --no-merges)
-      else
-        CHANGELOG=$(git log "$LAST_TAG" --pretty=format:"- %s (%an)" --no-merges)
-      fi
-
-    - echo "📝 Changelog généré :"
-    - echo "$CHANGELOG"
-
-    # 🚀 Création de la release GitHub
-    - |
-      curl -s -X POST https://api.github.com/repos/lepikouze/backup-portainer-github-test/releases \
+      curl -s -X POST https://api.github.com/repos/$GITHUB_USERNAME/backup-portainer-github-test/releases \
         -H "Authorization: token $GITHUB_TOKEN" \
         -H "Content-Type: application/json" \
         -d "$(jq -n \
-          --arg tag "$LAST_TAG" \
-          --arg name "$LAST_TAG" \
-          --arg body "## 🧾 Release Notes\n\n$CHANGELOG" \
-          '{ tag_name: $tag, name: $name, body: $body, draft: false, prerelease: false }')"
+              --arg tag "$LAST_TAG" \
+              --arg name "$LAST_TAG" \
+              --arg body "$CHANGELOG" \
+              '{ tag_name: $tag, name: $name, body: $body, draft: false, prerelease: false }')"
+
   when: manual
   allow_failure: false
