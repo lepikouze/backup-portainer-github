@@ -53,7 +53,7 @@ update_image_to_registries:
     # 🔁 Git remote + push
     - git config --global user.email "ci@martinbranda.com"
     - git config --global user.name "GitLab CI"
-    - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/$GITHUB_USERNAME/backup-portainer-github-test.git
+    - git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/$GITHUB_USERNAME/backup-portainer-github.git
 
     - echo "🚀 Pushing tag $LAST_TAG vers GitHub..."
     - git push github "$LAST_TAG" || echo "⚠️ Le tag existe déjà sur GitHub."
