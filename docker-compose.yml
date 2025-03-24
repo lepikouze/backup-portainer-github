@@ -19,7 +19,7 @@ services:
       # README_DESCRIPTION: ${README_DESCRIPTION}  # Optional
       # GITHUB_REPO_PATH: ${GITHUB_REPO_PATH}  # Optional
       #CRON_SCHEDULE: 0 0 4 * * 1 # Optional, use this OR INTERVAL_SECONDS, not both
-      INTERVAL_SECONDS: 60 # Optional, use this OR CRON_SCHEDULE, not both
+      INTERVAL_SECONDS: 60 # Optional, use this OR CRON_SCHEDULE, not both 60 SECONDS
     ports:
       - "5000:5000"
     volumes:

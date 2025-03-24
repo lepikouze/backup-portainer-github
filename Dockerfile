@@ -13,7 +13,7 @@
 #
 # Automated backup of Docker stacks and environment files from Portainer to a GitHub repository.
 #
-# Base image with Python 3.9
+# Base image with Python 3.9-Alpine
 FROM python:3.9-alpine
 
 # PROVIDE IMAGE LABLES
