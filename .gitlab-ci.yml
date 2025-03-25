@@ -46,10 +46,6 @@ build_and_push:
           \"tag_name\": \"$CI_COMMIT_TAG\",
           \"description\": $ESCAPED_CHANGELOG
         }"
-
-    - |
-      echo "$GITLAB_DEPLOY_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID"
-      curl --header "PRIVATE-TOKEN: $GITLAB_DEPLOY_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID"
   rules:
     - if: '$CI_COMMIT_TAG'
       when: always
