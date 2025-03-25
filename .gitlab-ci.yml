@@ -23,6 +23,26 @@ build_and_push:
     - docker push $IMAGE_NAME:$TAG
     - docker tag $IMAGE_NAME:$TAG $IMAGE_NAME:latest
     - docker push $IMAGE_NAME:latest
+
+    # 📝 Récupération du tag précédent
+    - git fetch --tags
+    - PREVIOUS_TAG=$(git tag --sort=-creatordate | grep -v "$CI_COMMIT_TAG" | tail -n 1)
+    - echo "🕓 Dernier tag précédent : $PREVIOUS_TAG"
+
+    # 🧾 Génération du changelog simple (trié, sans doublons, pas de merges)
+    - CHANGELOG=$(git log "$PREVIOUS_TAG..$CI_COMMIT_TAG" --pretty=format:"- %s" --no-merges | sort -u)
+    - echo "$CHANGELOG"
+
+    # 🚀 Création de la release GitLab
+    - |
+      curl --request POST "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" \
+        --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+        --header "Content-Type: application/json" \
+        --data "{
+          \"name\": \"$CI_COMMIT_TAG\",
+          \"tag_name\": \"$CI_COMMIT_TAG\",
+          \"description\": \"$CHANGELOG\"
+        }"
   rules:
     - if: '$CI_COMMIT_TAG'
       when: always
