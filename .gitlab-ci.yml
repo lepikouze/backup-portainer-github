@@ -35,21 +35,18 @@ build_and_push:
     - CHANGELOG=$(git log "$PREVIOUS_TAG..$CI_COMMIT_TAG" --pretty=format:"- %s" --no-merges | sort -u)
     - echo "$CHANGELOG"
 
-    - |
-      curl --header "PRIVATE-TOKEN: $GITLAB_DEPLOY_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases"
-
     # 🚀 Création de la release GitLab curl --request POST "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" \ # collapsed multi-line command
     - |
-      ESCAPED_CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -R -s .)
+      CHANGELOG=$(git log "$PREVIOUS_TAG..$CI_COMMIT_TAG" --pretty=format:"- %s" --no-merges | sort -u)
+      ESCAPED_CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs .)
       curl --request POST "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" \
           --header "PRIVATE-TOKEN: $GITLAB_DEPLOY_TOKEN" \
           --header "Content-Type: application/json" \
-          --data "{
-            \"name\": \"$CI_COMMIT_TAG\",
-            \"tag_name\": \"$CI_COMMIT_TAG\",
-            \"description\": \"$CHANGELOG\"
-          }"
-
+          --header "User-Agent: GitLabReleaseBot/1.0" \
+          --data "$(jq -n --arg name "$CI_COMMIT_TAG" \
+                          --arg tag_name "$CI_COMMIT_TAG" \
+                          --arg description "$CHANGELOG" \
+                          '{ name: $name, tag_name: $tag_name, description: $description }')"
   rules:
     - if: '$CI_COMMIT_TAG'
       when: always
