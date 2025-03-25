@@ -38,7 +38,7 @@ build_and_push:
     # 🚀 Création de la release GitLab
     - |
       curl --request POST "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" \
-        --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+        --header "PRIVATE-TOKEN: $GITLAB_DEPLOY_TOKEN" \
         --header "Content-Type: application/json" \
         --data "{
           \"name\": \"$CI_COMMIT_TAG\",
