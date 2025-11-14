@@ -1,3 +1,7 @@
+## v1.247
+
+- update pip 25.3
+
 ## v1.2.35
 
 - Changement du CI
