@@ -4,6 +4,12 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/lepikouze/backup-portainer-github)](https://github.com/lepikouze/backup-portainer-github/commits/main)
 [![GitHub License](https://img.shields.io/github/license/lepikouze/backup-portainer-github)](https://github.com/lepikouze/backup-portainer-github/blob/main/LICENSE)
 
+# ⚠️ Project Status
+
+This project is no longer actively maintained by the original author because I no longer use Portainer.
+The repository remains public for archival purposes and community use.
+Pull requests and forks are welcome. If someone is interested in taking over maintenance of the project, feel free to open an issue or contact me.
+
 This Docker container automates the backup of Docker stacks and environment files from Portainer to a GitHub repository. The solution is highly configurable, allowing you to schedule backups at specific intervals or via cron expressions.
 
 ## Table of Contents
